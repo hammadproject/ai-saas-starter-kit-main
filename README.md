@@ -1,347 +1,827 @@
-# AI SaaS Starter Kit
+# AI SaaS Platform
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/backblaze-labs/ai-saas-starter-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/backblaze-labs/ai-saas-starter-kit/actions/workflows/ci.yml)
-![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
-![React 19](https://img.shields.io/badge/React-19-149eca?logo=react)
-![FastAPI](https://img.shields.io/badge/FastAPI-Python%203.11+-009688?logo=fastapi)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
-![Storage: Backblaze B2](https://img.shields.io/badge/storage-Backblaze%20B2-e21e29)
+A full-stack foundation for building and launching AI-powered SaaS products with authentication, subscription billing, AI image generation, file management, administration, and production-oriented backend services.
 
-**Production-ready Next.js + FastAPI SaaS template with Supabase auth, Stripe billing, AI image generation, and Backblaze B2 storage.**
+## Overview
 
-Stop wiring boilerplate and start building.
+This project provides a reusable starting point for AI SaaS applications instead of requiring each product to rebuild authentication, billing, storage, user management, and AI infrastructure from scratch.
 
-**AI SaaS Starter Kit** is an open-source, production-ready template for building AI SaaS applications on a full-stack TypeScript (Next.js 16) and Python (FastAPI) monorepo. It ships authentication (Supabase), subscription billing (Stripe), an AI text-to-image workflow (NVIDIA NIM + Genblaze SDK), an admin console, and a **[Backblaze B2](https://www.backblaze.com/sign-up/ai-cloud-storage?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-ai-saas-starter-kit)**–backed file manager out of the box — so developers and AI coding agents can skip weeks of auth, billing, and storage boilerplate and go straight to their app's unique features. B2 gives AI apps S3-compatible object storage at a fraction of typical cloud egress cost, so generated media and uploads stay cheap at scale. MIT-licensed.
+The application combines a **Next.js frontend** with a **FastAPI backend** and provides:
 
-**What you get out of the box:**
-- **Authentication** — Supabase email/password + email-code (OTP) sign-in, protected routes, profiles, and an admin role
-- **Subscription billing** — Stripe Checkout + Billing Portal, Free/Pro/Team plans, webhook→database sync, and plan-gating
-- **AI image generation** — a text-to-image workflow (NVIDIA NIM `flux.1-dev`) orchestrated by the Genblaze SDK, written to B2 with a SHA-256 provenance manifest
-- **Admin console** — filterable, paginated DataGrids over users, subscriptions, jobs, files, and provider runs, plus an audit log
-- **File manager** — drag-and-drop upload with progress + a browser with preview, download, and delete; uploads return rich file metadata (checksums, dimensions, EXIF) in the API response
-- **Full-stack UI** (Next.js 16 + React 19 + Tailwind v4 + shadcn/ui) on a strictly layered FastAPI backend with structural tests
-- **Agent-optimized docs** — your AI coding agent can read the repo and start contributing immediately
+- User authentication and protected application routes
+- User profiles and role-based administration
+- Subscription billing with Stripe
+- AI text-to-image generation
+- S3-compatible object storage through Backblaze B2
+- File upload, browsing, preview, download, and deletion
+- Usage and activity dashboards
+- Administrative data views and audit information
+- API health and metrics endpoints
+- Automated tests and structural architecture checks
 
-## Contents
+Optional integrations can be enabled independently, allowing the core application to run without configuring every external service.
 
-- [What it looks like](#what-it-looks-like)
-- [Agent-First Architecture](#agent-first-architecture)
-- [Quick Start](#quick-start)
-- [Building Your App](#building-your-app)
-- [Deploy](#deploy)
-- [Core Features](#core-features)
-- [Tech Stack](#tech-stack)
-- [Commands](#commands)
-- [FAQ](#faq)
-- [Documentation Map](#documentation-map)
-
-## What it looks like
-
-**Sign in** — email/password or passwordless email-code (OTP), in a polished dark UI.
-
+---
 ![Sign in screen with password and email-code tabs](docs/images/signin.png)
+## Architecture
 
-**Dashboard** — your plan, storage used, and AI generation activity at a glance.
-
+```text
+                    ┌──────────────────────┐
+                    │     Next.js Web App  │
+                    │  React + TypeScript  │
+                    └──────────┬───────────┘
+                               │
+                         HTTP / API
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │     FastAPI API      │
+                    │ Authentication       │
+                    │ Billing              │
+                    │ Files                │
+                    │ AI Generation        │
+                    │ Admin                │
+                    └───────┬───────┬──────┘
+                            │       │
+             ┌──────────────┘       └──────────────┐
+             ▼                                     ▼
+      ┌──────────────┐                      ┌──────────────┐
+      │   Supabase   │                      │ Backblaze B2 │
+      │ Auth + DB    │                      │ Object Store │
+      └──────────────┘                      └──────────────┘
+             │
+             │
+      ┌──────┴─────────┐
+      ▼                ▼
+┌────────────┐   ┌───────────────┐
+│   Stripe   │   │ NVIDIA NIM    │
+│  Billing   │   │ AI Generation│
+└────────────┘   └───────────────┘
+```
 ![Dashboard with plan, storage, generation stat cards, an upload-activity chart, and recent generations](docs/images/dashboard.png)
 
-**Generate** — describe an image and the NVIDIA NIM + Genblaze workflow renders it and saves it to Backblaze B2, where it appears here and in your files.
+The frontend communicates with the FastAPI service, while authentication and application data are handled through Supabase. Files are stored in Backblaze B2 using its S3-compatible interface. Stripe and NVIDIA NIM are optional integrations for billing and AI generation.
 
+---
 ![Generate page with a prompt form and a gallery of generated images](docs/images/generate.png)
 
-**Billing** — Stripe-backed Free / Pro / Team plans with plan-gating; the Pro plan unlocks AI generation.
+## Key Features
 
-![Billing page showing Free, Pro, and Team plan cards with the current plan highlighted](docs/images/billing.png)
+### Authentication
 
-**Admin console** — an overview of every user's resources across the workspace: users, subscriptions, jobs, files, provider runs, and storage.
+- Email/password authentication
+- Passwordless email-code authentication
+- Protected application routes
+- User profiles
+- Role-based administration
+- Server-side authentication checks
 
-![Admin overview with stat cards for users, admins, subscriptions, jobs, files, and storage](docs/images/admin.png)
+### Subscription Billing
 
-**Admin DataGrids** — filterable, paginated grids over each resource, with an audit log of role changes.
+Stripe integration provides:
 
-![Admin subscriptions DataGrid showing plan, status, renewal date, and cancellation columns](docs/images/admin-datagrids.png)
+- Checkout
+- Billing Portal
+- Free, Pro, and Team plan support
+- Subscription synchronization through webhooks
+- Plan-based feature restrictions
 
-## Agent-First Architecture
+Billing is optional during development. The application can run without configuring Stripe.
 
-This repo is optimized for coding agents. Use the template, point your agent at it, and start building.
+### AI Image Generation
 
-The structure follows the principle that **repository knowledge is the system of record**. Anything an agent can't access in-context doesn't exist — so everything it needs to reason about the codebase is versioned, co-located, and discoverable from the repo itself.
+The `/generate` workflow accepts a text prompt and generates an image through:
 
-### How it works
-
-**[AGENTS.md](AGENTS.md) is the single source of truth for all coding agents.** A compact (~150-line) entry point gives agents the repository layout, architectural invariants, commands, conventions, and pointers to deeper docs. Agent-specific files (CLAUDE.md, etc.) are thin pointers back to AGENTS.md.
-
-**Architecture is enforced mechanically, not by convention.** Layering rules, import boundaries, file size limits, and SDK containment are verified by structural tests and lints that run on every change. When rules are enforceable by code, agents follow them reliably.
-
-**The knowledge base is structured for progressive disclosure:**
-
+```text
+User Prompt
+    ↓
+FastAPI
+    ↓
+NVIDIA NIM
+    ↓
+Image Result
+    ↓
+Backblaze B2
 ```
-AGENTS.md              Single source of truth — layout, invariants, commands, conventions
-ARCHITECTURE.md        System layout, layering rules, data flows
-docs/
-  features/            Feature docs (inputs, outputs, flows, edge cases)
-  app-workflows.md     User journeys
-  dev-workflows.md     Engineering workflows and testing
-  SECURITY.md          Security principles
-  RELIABILITY.md       Reliability expectations
-  exec-plans/          Execution plans and tech debt tracker
+
+The current implementation uses the NVIDIA NIM `flux.1-dev` model through the Genblaze SDK.
+
+Generated files are stored in B2 and include a SHA-256 provenance manifest.
+
+AI generation is Pro-plan gated in the current application.
+
+### File Management
+
+The application includes a complete file-management workflow:
+
+- Drag-and-drop uploads
+- Upload progress
+- Browser-based file listing
+- File previews
+- Downloads
+- File deletion
+- File metadata
+- Checksums
+- Image dimensions
+- EXIF metadata where available
+
+Uploads can be sent directly from the browser to B2 using presigned requests, avoiding unnecessary transfer through the application server.
+
+### Dashboard
+
+The application dashboard provides an overview of:
+
+- Current subscription plan
+- Storage usage
+- AI generation activity
+- Upload activity
+- Recently uploaded files
+
+### Admin Console
+
+Administrators can manage and inspect application resources including:
+
+- Users
+- Subscriptions
+- Jobs
+- Files
+- Provider runs
+- Storage information
+- Audit information
+
+Administrative routes are protected by the application's role system.
+
+### API Reliability & Observability
+
+The backend includes:
+
+- Health checks
+- Metrics endpoint
+- Structured request logging
+- Request tracing
+- Rate limiting
+- HTTP error handling
+- Input validation
+- Automated structural checks
+
+---
+
+## Application Workflow
+
+### Authentication
+
+```text
+User
+  ↓
+Sign Up / Sign In
+  ↓
+Supabase Authentication
+  ↓
+User Profile
+  ↓
+Protected Application
 ```
 
-### Key design decisions
+### File Upload
 
-Every architectural rule is enforced mechanically, not by convention: a strict layered backend (`types -> config -> repo -> service -> runtime`), external SDKs contained to the `repo/` layer, a 300-line-per-file limit, and DRY docs updated in the same PR as the code — all verified by structural tests, ruff, and ESLint on every change. The full contract lives in **[AGENTS.md](AGENTS.md)** and **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+```text
+Browser
+  ↓
+Request Upload Authorization
+  ↓
+Presigned B2 Upload
+  ↓
+Backblaze B2
+  ↓
+File Metadata Stored
+  ↓
+File Browser
+```
 
-This approach draws from [OpenAI's experience building with Codex](https://openai.com/index/harness-engineering/): agents work best in environments with strict boundaries, predictable structure, and progressive context disclosure.
+### AI Generation
 
-## Quick Start
+```text
+Prompt
+  ↓
+Generation API
+  ↓
+NVIDIA NIM
+  ↓
+Generated Image
+  ↓
+B2 Storage
+  ↓
+Generation History
+```
 
-You need: Node.js >= 20, pnpm >= 9, Python >= 3.11, and a free **[Backblaze B2 account](https://www.backblaze.com/sign-up/ai-cloud-storage?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-ai-saas-starter-kit)**.
+### Billing
 
-### Start a new project
+```text
+User
+  ↓
+Select Plan
+  ↓
+Stripe Checkout
+  ↓
+Stripe Webhook
+  ↓
+Subscription Record
+  ↓
+Plan-Based Access
+```
 
-**Option 1: GitHub Template (recommended)**
+---
 
-Click the green **"Use this template"** button at the top of this repo, name your project, then:
+## Tech Stack
+
+### Frontend
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+- TanStack Query
+- Recharts
+
+### Backend
+
+- Python 3.11+
+- FastAPI
+- Pydantic
+- boto3
+- httpx
+- Pillow
+- PyPDF2
+- Ruff
+- Pytest
+
+### Platform Services
+
+- Supabase — authentication and PostgreSQL
+- Backblaze B2 — S3-compatible object storage
+- Stripe — subscriptions and payments
+- NVIDIA NIM — AI image generation
+- Genblaze SDK — AI generation orchestration
+
+### Development & Testing
+
+- pnpm workspaces
+- ESLint
+- Playwright
+- Vitest
+- Pytest
+- Ruff
+- Pre-commit
+- GitHub Actions
+
+---
+
+## Project Structure
+
+```text
+.
+├── apps/
+│   └── web/
+│       ├── e2e/
+│       ├── public/
+│       └── src/
+│           └── app/
+│               ├── (app)/
+│               │   ├── account/
+│               │   ├── admin/
+│               │   ├── billing/
+│               │   ├── dashboard/
+│               │   ├── design/
+│               │   ├── files/
+│               │   ├── generate/
+│               │   ├── settings/
+│               │   └── upload/
+│               ├── (auth)/
+│               │   ├── signin/
+│               │   └── signup/
+│               ├── auth/
+│               └── ...
+│
+├── services/
+│   └── api/
+│       ├── app/
+│       ├── tests/
+│       ├── main.py
+│       ├── pyproject.toml
+│       ├── requirements.txt
+│       ├── railway.json
+│       └── vercel.json
+│
+├── scripts/
+│   ├── configure_b2_cors.py
+│   ├── dev.sh
+│   ├── doctor.mjs
+│   ├── pick-port.mjs
+│   ├── sync-stripe-env.mjs
+│   └── sync-supabase-env.mjs
+│
+├── supabase/
+│   ├── config.toml
+│   └── ...
+│
+├── docs/
+│   ├── features/
+│   ├── images/
+│   ├── deployment.md
+│   ├── design-system.md
+│   ├── dev-workflows.md
+│   ├── app-workflows.md
+│   ├── SECURITY.md
+│   └── RELIABILITY.md
+│
+├── .env.example
+├── AGENTS.md
+├── ARCHITECTURE.md
+├── LICENSE
+├── package.json
+├── pnpm-lock.yaml
+└── pnpm-workspace.yaml
+```
+
+---
+
+## Requirements
+
+Before starting development, install:
+
+- Node.js 20 or newer
+- pnpm 9 or newer
+- Python 3.11 or newer
+- Docker for a local Supabase environment
+- Supabase CLI
+- Stripe CLI if local billing development is required
+
+You will also need accounts or credentials for the services you enable:
+
+- Backblaze B2
+- Supabase
+- Stripe
+- NVIDIA
+
+---
+
+## Installation
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourorg/my-cool-app.git
-cd my-cool-app
+git clone https://github.com/hammadproject/ai-saas-starter-kit-main.git
+cd ai-saas-starter-kit-main
 ```
 
-**Option 2: Clone and reinitialize**
-
-```bash
-git clone https://github.com/backblaze-labs/ai-saas-starter-kit.git my-cool-app
-cd my-cool-app
-rm -rf .git
-git init
-git add .
-git commit -m "Initial commit from ai-saas-starter-kit"
-```
-
-Either way you get a clean project with no upstream history — ready to push to your own repo and point your agent at it.
-
-### Setup
-
-> **TL;DR (local).** Auth, uploads, and the file manager need only **B2 + a local Supabase stack** — Stripe billing and AI generation are optional (their endpoints return a clean `503` until configured). After cloning:
->
-> ```bash
-> pnpm install
-> cd services/api && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && cd ../..
-> cp .env.example .env          # then paste your B2 bucket + app key into .env (step 3)
-> supabase start && node scripts/sync-supabase-env.mjs
-> pnpm dev                      # http://localhost:3000 — sign up, then grant admin (see below)
-> ```
->
-> The steps below expand each of these, plus the optional Stripe (step 5) and AI (step 6) setup.
-
-**1. Install dependencies**
+### 2. Install Frontend Dependencies
 
 ```bash
 pnpm install
 ```
 
-**2. Set up the backend**
+### 3. Create the Python Environment
 
 ```bash
 cd services/api
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cd ../..
 ```
 
-**3. Add your B2 credentials**
+On Windows, activate the environment with:
 
-Set up your local `.env`:
+```powershell
+services\api\.venv\Scripts\activate
+```
+
+### 4. Configure Environment Variables
+
+Create the local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` in your editor and keep it visible. Then head to the [Backblaze B2 dashboard](https://secure.backblaze.com/b2_buckets.htm?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-ai-saas-starter-kit) and:
+Then add the credentials required for your selected services.
 
-1. **Create a bucket.** Paste each value into `.env`:
-   - **Bucket Unique Name** → `B2_BUCKET_NAME`
-   - The bucket's **region** (e.g. `us-west-004`) → `B2_REGION` — the S3 endpoint is derived from this (`https://s3.{B2_REGION}.backblazeb2.com`), so there's no separate endpoint variable.
-   - **Public URL base** for the bucket (e.g. `https://<bucket>.s3.<region>.backblazeb2.com`) → `B2_PUBLIC_URL_BASE`.
-2. **Create an application key** with `Read and Write` permission. B2 will show two values — paste each into `.env`:
-   - **keyID** → `B2_APPLICATION_KEY_ID`
-   - **applicationKey** → `B2_APPLICATION_KEY` *(only shown once — paste it now)*
+---
 
-> Want a walkthrough? See the docs for [creating a bucket](https://www.backblaze.com/docs/cloud-storage-create-and-manage-buckets?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-ai-saas-starter-kit) and [creating app keys](https://www.backblaze.com/docs/cloud-storage-create-and-manage-app-keys?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-ai-saas-starter-kit).
+## Environment Configuration
 
-**4. Set up Supabase (auth + database)**
+The project uses a single `.env` file at the repository root.
 
-Auth and the user database run on [Supabase](https://supabase.com). Use a **local** stack (default, zero cloud setup) or a **hosted** project — the app is identical either way, only how the three env vars below get filled differs.
+### Backblaze B2
 
-| Env var | What it is |
-|---------|-----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public anon/publishable key (browser-safe) |
-| `SUPABASE_SERVICE_ROLE_KEY` | service-role key — **server-only, never expose it to the browser** |
+The following values are required for file storage:
 
-**Local (recommended for development)** — needs Docker (e.g. [Colima](https://github.com/abiosoft/colima) or Docker Desktop) and the Supabase CLI (`brew install supabase/tap/supabase`):
-
-```bash
-supabase start                       # boots Postgres + Auth + Studio + Mailpit and applies migrations
-node scripts/sync-supabase-env.mjs   # writes all three vars above into .env for you
+```env
+B2_APPLICATION_KEY_ID=
+B2_APPLICATION_KEY=
+B2_BUCKET_NAME=
+B2_REGION=
 ```
 
-Local sign-up confirmation and magic-link emails are caught by Mailpit at `http://127.0.0.1:54324` — nothing hits a real inbox.
+An optional public URL can be configured with:
 
-**Hosted (staging/production)** — create a project at [supabase.com](https://supabase.com), then **link the CLI before pushing** so `db push` knows which project to target:
-
-```bash
-supabase login                                   # once per machine (opens the browser)
-supabase link --project-ref <your-project-ref>   # ref = your project URL subdomain, or Settings → General
-supabase db push                                 # applies the migrations to the hosted DB
+```env
+B2_PUBLIC_URL_BASE=
 ```
 
-Then copy the three vars from **Project Settings → API** into `.env` (project URL → `NEXT_PUBLIC_SUPABASE_URL`, anon/publishable key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`, service-role key → `SUPABASE_SERVICE_ROLE_KEY`). Full walkthrough in [docs/deployment.md](docs/deployment.md).
+If it is not configured, the application can use short-lived presigned URLs.
 
-> ℹ️ **Admin:** signups get the default `user` role. After signing up, grant admin explicitly from the Supabase SQL editor — `update public.profiles set role='admin' where email='you@example.com';` — see [docs/SECURITY.md](docs/SECURITY.md).
+### Supabase
 
-**5. Set up Stripe billing (optional)**
+Authentication and PostgreSQL require:
 
-Billing runs on [Stripe](https://stripe.com) and is optional — the billing endpoints return `503` until it's configured; the rest of the app is unaffected. To enable it in **test mode** you need the [Stripe CLI](https://docs.stripe.com/stripe-cli) (`brew install stripe/stripe-cli/stripe`):
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-1. Copy your **test-mode** secret key (`sk_test_...`) from the [Stripe Dashboard](https://dashboard.stripe.com/test/apikeys) into `STRIPE_SECRET_KEY` in `.env`.
-2. Run `pnpm stripe:seed` — creates the Pro/Team prices and writes `STRIPE_PRICE_PRO` / `STRIPE_PRICE_TEAM` into `.env` (idempotent).
-3. Run `pnpm stripe:listen` (leave it running) and copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET`.
-4. Restart `pnpm dev` (env is read at startup), then test checkout with card `4242 4242 4242 4242`.
+The service-role key is server-only and must never be exposed to browser-side code.
 
-New to Stripe? The [step-by-step Stripe billing setup guide](docs/stripe-setup.md) walks through all of this with zero Stripe experience assumed.
+For local development:
 
-**6. Set up AI image generation (optional)**
+```bash
+supabase start
+node scripts/sync-supabase-env.mjs
+```
 
-The marquee `/generate` workflow turns a text prompt into an image via NVIDIA NIM (`flux.1-dev`), orchestrated by the [Genblaze](https://pypi.org/project/genblaze-core/) SDK and written to B2 with a SHA-256 provenance manifest. The app boots fine without it — the endpoint returns a clean `503` — so this is optional. To enable it, grab a free key with starter credits at [build.nvidia.com](https://build.nvidia.com) (it looks like `nvapi-...`) and set `NVIDIA_API_KEY` in `.env`. Generation is **Pro-gated**, so sign in on a Pro plan (a Stripe test checkout is enough) to try it. The model and image size are configurable via `NVIDIA_IMAGE_MODEL` and the `GENERATION_*` settings in `services/api/app/config/settings.py`.
+### NVIDIA AI Generation
 
-**7. Run it**
+AI image generation can be enabled with:
+
+```env
+NVIDIA_API_KEY=
+```
+
+The application can start without this variable; the generation endpoint remains unavailable until the service is configured.
+
+### Stripe
+
+Billing can be enabled with:
+
+```env
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_PRO=
+STRIPE_PRICE_TEAM=
+```
+
+The project includes scripts for creating the test prices and forwarding Stripe webhooks locally.
+
+### Optional API Configuration
+
+The environment template also supports configuration for:
+
+```env
+NEXT_PUBLIC_API_URL=
+ENABLE_DOCS=
+API_CORS_ORIGINS=
+BILLING_SUCCESS_URL=
+BILLING_CANCEL_URL=
+BILLING_PORTAL_RETURN_URL=
+TRUST_PROXY=
+METRICS_TOKEN=
+AUTH_CACHE_TTL_SECONDS=
+```
+
+Only configure these when the corresponding deployment or security requirement applies.
+
+---
+
+## Local Development
+
+Start the complete development environment with:
 
 ```bash
 pnpm dev
 ```
 
-That's it. Frontend at `localhost:3000`, API at `localhost:8000`. Sign up to create your account (grant yourself admin via SQL — see the admin note above), then upload a file and see it working.
+The frontend is available at:
 
-`pnpm dev` runs `pnpm doctor` first — a preflight check that catches the common setup gotchas (wrong Node/Python version, missing venv, missing or placeholder `.env`, ports already taken) and tells you exactly how to fix each one. Run it standalone any time with `pnpm doctor`.
+```text
+http://localhost:3000
+```
 
-## Building Your App
+The API runs at:
 
-When you adapt this kit for a new app, keep the shared scaffolding and only swap out what's app-specific:
+```text
+http://localhost:8000
+```
 
-- **Keep** the UI kit (`apps/web/src/components/ui/` + design tokens in `globals.css` + `/design`).
-- **Keep** the auth layer (Supabase sign in/up, protected routes, `/account`, roles/admin) — it's the reusable SaaS foundation.
-- **Keep** the billing layer (Stripe Checkout/Portal, `/billing`, plans, webhook sync, and the `require_plan` gate) — swap the plan definitions/prices for your product, not the plumbing.
-- **Keep** the File Explorer (`/files`) and Upload (`/upload`) pages and their sidebar nav entries — they're the reusable B2-backed surface.
-- **Adapt** the Dashboard (`/`) to your use case — replace the default stats, chart, and recent uploads with metrics that reflect what your app actually does.
-- **Rebrand** by editing a single file: `apps/web/src/lib/app-config.ts` holds the app name and description (`APP_NAME`, `APP_DESCRIPTION`). Changing them there updates the page title, sidebar, and breadcrumb everywhere — no other files to touch.
+The development command runs the project's preflight checks before starting the application.
 
-Full contract and rationale: [AGENTS.md §2 — Building on This Starter Kit](AGENTS.md#2-building-on-this-starter-kit).
+You can also run the checks independently:
 
-## Deploy
+```bash
+pnpm doctor
+```
 
-Two topologies, both documented in **[docs/deployment.md](docs/deployment.md)**: **split** (frontend on Vercel + backend on Railway/Render/Fly — the default, one-click below) or **all-Vercel** (backend as a Vercel serverless function too, for teams already on Vercel).
+### Frontend Only
 
-Deploy the **frontend** to Vercel in one click, then host the **backend** (FastAPI) on Railway, Render, or Fly.io:
+```bash
+pnpm dev:web
+```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fbackblaze-labs%2Fai-saas-starter-kit&root-directory=apps%2Fweb&project-name=ai-saas-starter-kit&repository-name=ai-saas-starter-kit&env=NEXT_PUBLIC_API_URL,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&envDescription=The%20frontend%20needs%20your%20backend%20API%20origin%20plus%20your%20Supabase%20project%20URL%20and%20anon%20key&envLink=https%3A%2F%2Fgithub.com%2Fbackblaze-labs%2Fai-saas-starter-kit%2Fblob%2Fmain%2Fdocs%2Fdeployment.md)
+### API Only
 
-> When importing, set the **Root Directory** to `apps/web` (this is a pnpm monorepo). Deploy the backend first so you have its URL for `NEXT_PUBLIC_API_URL`.
+```bash
+pnpm dev:api
+```
 
-Full production topology — Vercel + Railway/Render/Fly, hosted Supabase, Stripe live-mode, and B2 — is in **[docs/deployment.md](docs/deployment.md)**.
+---
 
-## Core Features
+## Supabase Setup
 
-- [Authentication](docs/features/authentication.md) — Supabase email/password + email-code (OTP) sign-in, protected routes, profiles, and an admin role
-- [Billing](docs/features/billing.md) — Stripe Checkout + Billing Portal, Free/Pro/Team plans, webhook→Supabase sync, and plan-gating (`require_plan`)
-- [AI Image Generation](docs/features/generation.md) — text-to-image (NVIDIA NIM `flux.1-dev`) via the Genblaze SDK → B2 with a SHA-256 provenance manifest; Pro-gated, and outputs land in the file manager
-- [Admin Console](docs/features/admin.md) — filterable, paginated DataGrids (users, subscriptions, jobs, files, provider runs) + an audit log; admin-gated
-- [File Upload](docs/features/file-upload.md) — drag-and-drop upload with real-time progress, sent **directly browser→B2** via a presigned PUT (no 4.5 MB serverless body cap)
-- [File Browser](docs/features/file-browser.md) — list, preview, download, delete files
-- [Dashboard](docs/features/dashboard.md) — stats cards, upload chart, recent uploads
-- [Design System](docs/design-system.md) — tokens, primitives, AI elements, the blaze generating loader, and inline `ErrorState` / `EmptyState` patterns. Live preview at `/design`.
-- Inline error handling — fetch failures surface *what's wrong* (API offline, 401, 5xx) and offer a Retry, instead of silently rendering empty state.
-- Single-source config — one `.env` at the repo root powers both API and web app, validated at startup so misconfig fails fast with a readable message.
-- Centralized data layer — every fetch goes through TanStack Query hooks in `apps/web/src/lib/queries.ts`; cache invalidation is one call after a mutation.
-- Production-grade observability & guardrails — structural tests (layering rules, import boundaries, SDK containment, file-size limits), structured JSON request logging with tracing, and `/health` + `/metrics` endpoints. Details in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/RELIABILITY.md](docs/RELIABILITY.md).
+For local development, start the Supabase stack:
 
-## Tech Stack
+```bash
+supabase start
+```
 
-- TypeScript, Next.js 16, React 19, Tailwind v4, shadcn/ui, Recharts
-- TanStack Query — caching, dedup, retry, stale-while-revalidate for every fetch
-- Python 3.11+, FastAPI, boto3, Pydantic v2, Pillow, PyPDF2, httpx
-- Supabase (auth + Postgres; `@supabase/ssr` for cookie-based sessions)
-- Stripe (subscriptions, Checkout, Billing Portal, webhooks)
-- Backblaze B2 (S3-compatible object storage)
-- pnpm workspaces (monorepo)
+Then synchronize the generated local credentials:
 
-## Commands
+```bash
+node scripts/sync-supabase-env.mjs
+```
 
-| Command | What it does |
-|---------|-------------|
-| `pnpm dev` | Start frontend + backend |
-| `pnpm dev:web` | Frontend only |
-| `pnpm dev:api` | Backend only |
-| `pnpm stripe:seed` | Create Stripe products/prices + write price IDs into `.env` (idempotent) |
-| `pnpm stripe:listen` | Forward Stripe webhooks to the local API |
-| `pnpm build` | Build frontend |
-| `pnpm lint` | Lint frontend |
-| `pnpm lint:api` | Lint backend (ruff) |
-| `pnpm test:api` | Run backend tests |
-| `pnpm test:web` | Run frontend tests (vitest) |
+The local Supabase environment provides the authentication and database services required by the application.
+
+For hosted environments, use your Supabase project's API credentials and apply the database migrations according to the deployment documentation.
+
+---
+
+## Stripe Setup
+
+Stripe is optional.
+
+To configure local billing:
+
+1. Add a test-mode Stripe secret key to `.env`.
+2. Run:
+
+```bash
+pnpm stripe:seed
+```
+
+3. Start webhook forwarding:
+
+```bash
+pnpm stripe:listen
+```
+
+4. Restart the application.
+
+The Stripe seed script creates the configured Pro and Team prices and writes their identifiers to the environment file.
+
+For detailed billing configuration, see `docs/stripe-setup.md`.
+
+---
+
+## Production Deployment
+
+The repository contains deployment configuration for the frontend and API.
+
+The documented production setup supports:
+
+- Next.js frontend deployment
+- FastAPI backend deployment
+- Hosted Supabase
+- Stripe live-mode billing
+- Backblaze B2 storage
+
+Deployment configuration and environment requirements are documented in:
+
+```text
+docs/deployment.md
+```
+
+For a production deployment, configure the frontend API URL, CORS origins, Supabase credentials, storage credentials, and any enabled third-party services.
+
+---
+
+## Configuration & Customization
+
+### Application Branding
+
+Application-level branding is centralized in:
+
+```text
+apps/web/src/lib/app-config.ts
+```
+
+The current configuration exposes:
+
+```ts
+APP_NAME
+APP_DESCRIPTION
+```
+
+Update these values to match your product before deploying.
+
+### Design System
+
+Reusable UI components and design guidance are documented in:
+
+```text
+docs/design-system.md
+```
+
+The application also exposes a design page during development for reviewing UI primitives.
+
+### Authentication
+
+Authentication behavior can be adapted through the Supabase integration and the application's authentication routes.
+
+Relevant application areas include:
+
+```text
+apps/web/src/app/(auth)/
+apps/web/src/app/auth/
+```
+
+### Billing
+
+Subscription plans and billing behavior are implemented in the billing application and API modules.
+
+The Stripe setup documentation should be used when changing products, prices, webhook behavior, or deployment configuration.
+
+### Storage
+
+The storage layer uses the S3-compatible interface provided by Backblaze B2.
+
+The architecture can therefore be adapted to another S3-compatible provider, although the current project configuration is built and documented around B2.
+
+---
+
+## Testing
+
+The project includes frontend, backend, structural, and end-to-end tests.
+
+### Frontend Tests
+
+```bash
+pnpm test:web
+```
+
+### Backend Tests
+
+```bash
+pnpm test:api
+```
+
+### Structural Tests
+
+```bash
+pnpm check:structure
+```
+
+### End-to-End Tests
+
+```bash
+pnpm test:e2e
+```
+
+### Type Checking
+
+```bash
+pnpm typecheck
+```
+
+### Linting
+
+```bash
+pnpm lint
+pnpm lint:api
+```
+
+### Production Build
+
+```bash
+pnpm build
+```
+
+---
+
+## Useful Commands
+
+| Command | Purpose |
+|---|---|
+| `pnpm dev` | Start frontend and backend development services |
+| `pnpm dev:web` | Start only the Next.js frontend |
+| `pnpm dev:api` | Start only the FastAPI backend |
+| `pnpm doctor` | Run development environment checks |
+| `pnpm build` | Build the web application |
 | `pnpm typecheck` | Type-check the frontend |
-| `pnpm check:structure` | Verify layering rules |
-| `pnpm test:e2e` | Playwright e2e tests (run `pnpm --filter @ai-saas-starter-kit/web exec playwright install chromium` once first) |
+| `pnpm lint` | Lint the frontend |
+| `pnpm lint:api` | Lint the Python backend |
+| `pnpm test:web` | Run frontend tests |
+| `pnpm test:api` | Run backend tests |
+| `pnpm check:structure` | Validate backend architecture rules |
+| `pnpm test:e2e` | Run Playwright end-to-end tests |
+| `pnpm stripe:seed` | Create/configure Stripe test prices |
+| `pnpm stripe:listen` | Forward Stripe webhooks locally |
 
-## FAQ
-
-**What is the AI SaaS Starter Kit?**
-It's an open-source, production-ready template for building AI SaaS applications on a full-stack Next.js 16 (TypeScript) + FastAPI (Python) monorepo, with Supabase authentication, Stripe subscription billing, an AI text-to-image workflow, an admin console, and a Backblaze B2–backed file manager wired in out of the box.
-
-**Do I need all four services (B2, Supabase, Stripe, NVIDIA) to run it?**
-No. Authentication, uploads, and the file manager need only **Backblaze B2 + a local Supabase stack**. Stripe billing and AI image generation are optional — their endpoints return a clean `503` until you configure them, and the rest of the app works unchanged.
-
-**Is it production-ready, and what's the license?**
-Yes — it ships with structural tests, structured logging, `/health` + `/metrics` endpoints, and a documented deploy path (Vercel + Railway/Render/Fly). It's **MIT-licensed**, so you're free to use it commercially.
-
-**Can I use a different storage provider?**
-The app talks to storage over the **S3-compatible API** (boto3), so it can point at any S3-compatible store — but it's built and tested for Backblaze B2, and the setup docs assume B2.
-
-**Why Backblaze B2 for AI apps?**
-B2 provides S3-compatible object storage at a fraction of the egress cost of the hyperscalers, so generated media, uploads, and datasets stay cheap to store *and* to serve as your app scales.
-
-## Documentation Map
-
-| Doc | Purpose |
-|-----|---------|
-| [AGENTS.md](AGENTS.md) | Agent table of contents — start here |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System layout, layering, data flows |
-| [docs/deployment.md](docs/deployment.md) | Production deploy — Vercel + Railway/Render/Fly, hosted Supabase, Stripe live-mode |
-| [docs/stripe-setup.md](docs/stripe-setup.md) | Stripe billing setup — Stripe CLI, recurring prices, webhook signing secret, local Checkout testing |
-| [docs/features/](docs/features/) | Feature docs (auth, billing, generation, admin, upload, browser, dashboard, metadata) |
-| [docs/design-system.md](docs/design-system.md) | Design tokens, primitives, AI elements, loader, error/empty states |
-| [docs/app-workflows.md](docs/app-workflows.md) | User journeys |
-| [docs/dev-workflows.md](docs/dev-workflows.md) | Engineering workflows and testing |
-| [docs/SECURITY.md](docs/SECURITY.md) | Security principles |
-| [docs/RELIABILITY.md](docs/RELIABILITY.md) | Reliability expectations |
-| [docs/exec-plans/](docs/exec-plans/) | Execution plans and tech debt tracker |
-
-## Contributing
-
-Start with [AGENTS.md](AGENTS.md) — it's the map, and everything else is discoverable from there. Open an issue or PR, and run `pnpm lint && pnpm test:api && pnpm check:structure` before submitting.
+---
 
 ## Security
 
-Found a vulnerability? Please report it privately via GitHub's **"Report a vulnerability"** button on the repo's [Security tab](https://github.com/backblaze-labs/ai-saas-starter-kit/security/advisories/new) rather than opening a public issue. For the security model and hardening details, see [docs/SECURITY.md](docs/SECURITY.md).
+This project handles authentication credentials, payment configuration, user information, and cloud-storage access. Treat all production credentials and application data as sensitive.
+
+### Never commit
+
+- `.env`
+- API keys
+- Supabase service-role keys
+- Backblaze application keys
+- Stripe secret keys
+- Stripe webhook secrets
+- OAuth credentials
+- Production tokens
+- Private customer or user data
+
+### Recommended practices
+
+- Use separate credentials for development and production.
+- Use least-privilege access wherever possible.
+- Keep service-role and secret credentials server-side.
+- Restrict production CORS origins.
+- Protect the metrics endpoint on public deployments.
+- Review generated AI content before using it in customer-facing workflows.
+- Keep dependencies updated.
+- Follow the security guidance in `docs/SECURITY.md`.
+
+If a credential is accidentally exposed, revoke and replace it immediately.
+
+---
+
+## Reliability & Observability
+
+The backend includes several mechanisms intended to make the application easier to operate:
+
+- Health endpoints
+- Metrics
+- Structured request logging
+- Request tracing
+- Rate limiting
+- Input validation
+- Error handling
+- Automated structural tests
+
+Additional reliability guidance is available in:
+
+```text
+docs/RELIABILITY.md
+```
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| `AGENTS.md` | Repository conventions and development guidance |
+| `ARCHITECTURE.md` | Application architecture and technical boundaries |
+| `docs/deployment.md` | Deployment configuration |
+| `docs/SECURITY.md` | Security practices |
+| `docs/RELIABILITY.md` | Reliability and operational guidance |
+| `docs/app-workflows.md` | Application workflows |
+| `docs/dev-workflows.md` | Development and testing workflows |
+| `docs/design-system.md` | UI and design-system guidance |
+| `docs/stripe-setup.md` | Stripe configuration |
+| `docs/features/` | Feature-specific documentation |
+
+---
+
+## Project Status
+
+This repository provides a reusable foundation for AI SaaS applications. Core authentication, file management, administration, billing, and AI-generation workflows are implemented, while deployment and third-party integrations require environment-specific configuration.
+
+Before using the platform in production, configure the required services, review security settings, run the automated test suite, and replace all development credentials and URLs with production values.
+
+---
+
+## Contributing
+
+Contributions and improvements are welcome.
+
+Before submitting a change:
+
+1. Keep the existing project architecture intact unless the change requires an architectural update.
+2. Add or update tests for affected functionality.
+3. Run the relevant linting and test commands.
+4. Update documentation when configuration or behavior changes.
+5. Keep secrets and private data out of commits.
+
+---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+This project is distributed under the **MIT License**.
 
-## Claude Agent B2 Skill
-
-Manage Backblaze B2 from your terminal using natural language (list/search, audits, stale or large file detection, security checks, safe cleanup).
-
-Repo: [https://github.com/backblaze-b2-samples/claude-skill-b2-cloud-storage](https://github.com/backblaze-b2-samples/claude-skill-b2-cloud-storage)
+See the `LICENSE` file included in the repository for the complete license terms and required copyright notice.
